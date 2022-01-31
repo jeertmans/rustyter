@@ -13,6 +13,7 @@ fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
 fn length(it: Vec<PyObject>) -> PyResult<usize> {
     Ok(it.iter().count())
 }
+
 //fn it(obj: &T) -> PyIterator<'p> {
 //
 //}
