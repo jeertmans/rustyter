@@ -1,28 +1,47 @@
 use pyo3::prelude::*;
+use pyo3::types::PyIterator;
+use pyo3::PyIterProtocol;
 
-/// Formats the sum of two integers as string.
-#[pyfunction]
-#[pyo3(text_signature = "(a, b, /)")]
-fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
-    Ok((a + b).to_string())
+#[pyclass]
+struct It {
+    iter: Py<PyIterator>,
 }
 
-/// Reads iterator and returns length.
-#[pyfunction]
-#[pyo3(text_signature = "(it, /)")]
-fn length(it: Vec<PyObject>) -> PyResult<usize> {
-    Ok(it.iter().count())
+#[pymethods]
+impl It {
+    #[new]
+    fn new(iter: &PyIterator) -> Self {
+        It { iter: iter.into() }
+    }
+    #[getter]
+    fn iter(&self) -> PyResult<Py<PyIterator>> {
+        Ok(self.iter.clone())
+    }
+
+    fn count(slf: PyRefMut<Self>) -> PyResult<usize> {
+        Ok(slf.iter.as_ref(slf.py()).count())
+    }
 }
 
-//fn it(obj: &T) -> PyIterator<'p> {
-//
-//}
+#[pyproto]
+impl PyIterProtocol for It {
+    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    fn __next__(slf: PyRefMut<Self>) -> Option<PyObject> {
+        let mut iter: &PyIterator = slf.iter.clone().into_ref(slf.py());
+        match iter.next() {
+            Some(value) => return Some(value.unwrap().into()),
+            None => return None,
+        }
+    }
+}
 
 /// A Python module implemented in Rust.
 #[pymodule]
 fn rustyter(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
-    m.add_function(wrap_pyfunction!(length, m)?)?;
+    m.add_class::<It>()?;
 
     Ok(())
 }
